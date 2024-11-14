@@ -134,7 +134,7 @@ orders_raw_df.write.format("delta").mode("overwrite").saveAsTable("ORDERS_RAW")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **d. Validate data loaded successfully to Delta Table ORDERS_RAW**:
+# MAGIC ### d. Validate data loaded successfully to Delta Table ORDERS_RAW**:
 
 # COMMAND ----------
 
@@ -150,4 +150,36 @@ orders_raw_df.write.format("delta").mode("overwrite").saveAsTable("ORDERS_RAW")
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Transform data in delta table
 
+# COMMAND ----------
+
+# MAGIC
+# MAGIC %md
+# MAGIC <a href="https://www.databricks.com/glossary/medallion-architecture" target="_blank">Medallion Architecture</a>   </br><img src="https://databricks.com/wp-content/uploads/2020/09/delta-lake-medallion-model-scaled.jpg" width=900/>
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### a. Read ORDERS_RAW delta table using spark Dataframe
+
+# COMMAND ----------
+
+#read Delta Table using spark dataframe
+
+ORDERS_Gold_df= spark.read.table("SupplyChaindb.ORDERS_RAW")
+
+ORDERS_Gold_df.show(n=5,truncate=False)
+# Click on ORDERS_DF to See the Schema of the Table. 
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### b. Update ORDER_DATE Column's Data Type
+
+# COMMAND ----------
+
+from pyspark.sql.functions import *
+
+ORDERS_Gold_df =  
