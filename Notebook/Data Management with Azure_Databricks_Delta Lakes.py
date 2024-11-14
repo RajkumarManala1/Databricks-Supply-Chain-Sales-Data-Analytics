@@ -118,6 +118,7 @@ spark.sql(f"USE {db}")
 ## Create DelaTable ORDERS_RAW in the metastore using DataFrame's schema and write data to it
 ## Documentation : https://docs.delta.io/latest/quick-start.html#create-a-table
 
+orders_raw_df = spark.read.table("SupplyChainDB.ORDERS_RAW")
 orders_raw_df.write.format("delta").mode("overwrite").saveAsTable("ORDERS_RAW")
 
 # COMMAND ----------
@@ -180,6 +181,126 @@ ORDERS_Gold_df.show(n=5,truncate=False)
 
 # COMMAND ----------
 
+from pyspark.sql import SparkSession
+
+ORDERS_Gold_df = ORDERS_Gold_df.withColumn("ORDER_DATE", to_date(col("ORDER_DATE"), "yyyy-MM-dd"))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### c. Drop Rows with Null Values
+
+# COMMAND ----------
+
+# Count Nulls for each column
 from pyspark.sql.functions import *
 
-ORDERS_Gold_df =  
+display(ORDERS_Gold_df.select([count(when(col(c).isNull(),c)).alias(c) for c in ORDERS_Gold_df.columns]))
+
+# COMMAND ----------
+
+#  Remove Nulls using dropna() method which removes all rows with Null Values 
+
+ORDERS_Gold_df = ORDERS_Gold_df.dropna()
+
+ORDERS_Gold_df.count()
+
+# COMMAND ----------
+
+# Count Nulls for each column
+from pyspark.sql.functions import *
+
+display(ORDERS_Gold_df.select([count(when(col(c).isNull(),c)).alias(c) for c in ORDERS_Gold_df.columns]))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### d. Add new Column TOTAL_ORDER
+
+# COMMAND ----------
+
+#Use withColumn function
+
+ORDERS_Gold_df= ORDERS_Gold_df.withColumn("TOTAL_ORDER", col("QUANTITY") * col("UNIT_PRICE"))
+
+# Display ORDERS_Gold_df to validate the creation of the New Column TOTAL_ORDER
+display(ORDERS_Gold_df)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### e. Create Delta Table ORDERS_GOLD
+
+# COMMAND ----------
+
+spark.sql(f"USE SupplyChainDB")
+
+## Create DeltaTable Orders_GOLD: 
+
+ORDERS_Gold_df.write.mode("overwrite").format("delta").saveAsTable("ORDERS_GOLD")
+
+
+## Validate that the table was created successfully
+display(spark.sql(f"SHOW TABLES"))
+
+# COMMAND ----------
+
+display(table("ORDERS_Gold"))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # TASK 5 - Query Orders Delta table using SQL
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Get Orders_Gold dataset using SQL
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- Get top 30 rows Get Familiar with the Data
+# MAGIC
+# MAGIC USE supplychainDB;
+# MAGIC
+# MAGIC SELECT * FROM ORDERS_GOLD LIMIT 30;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### KPI-1: Quantity Sold by Country
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT ORDER_COUNTRY, SUM(QUANTITY) as TOTAL_DEMAND from supplychaindb.orders_gold WHERE ORDER_STATUS != 'CANCELLED' GROUP BY ORDER_COUNTRY
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### KPI-2: Sales by Division ($)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT CATEGORY, SUM(TOTAL_ORDER) AS REVENUE FROM supplychaindb.orders_gold WHERE ORDER_STATUS != 'CANCELLED' GROUP BY CATEGORY ORDER BY REVENUE DESC;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### KPI-3: Top-5 Popular Brands
+
+# COMMAND ----------
+
+# MAGIC
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT BRAND, SUM(QUANTITY) AS TOTAL_SOLD_ITEMS from supplychaindb.orders_gold GROUP BY BRAND ORDER BY TOTAL_SOLD_ITEMS DESC;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # TASK 6 - Create Dashboard
