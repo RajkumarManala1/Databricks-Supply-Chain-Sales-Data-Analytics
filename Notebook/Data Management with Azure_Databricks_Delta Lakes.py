@@ -67,7 +67,86 @@ dbutils.fs.ls("/Volumes/foraproject/default/filestore/SupplyChain/ORDERS_RAW/")
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC # Create Delta Table : ORDERS_RAW
+# MAGIC # Loading ORDERS_RAW Data Into Notepad and Creating Delta Table
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### a. Read multiline json files using spark dataframe:
+
+# COMMAND ----------
+
+# Read multiple line json files using spark dataframeAPI
+
+orders_raw_df = spark.read.option("multiline", "true").json("/Volumes/foraproject/default/filestore/SupplyChain/ORDERS_RAW/ORDERS_RAW_PART_*.json")
+
+
+## Show the datafarme
+orders_raw_df.show(n=5, truncate=False) 
+
+
+# COMMAND ----------
+
+#Validate loaded files Count Number of Rows in the DataFrame
+
+orders_raw_df.count()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### ![b.](https://pages.databricks.com/rs/094-YMS-629/images/delta-lake-tiny-logo.png) b. Create Delta Table ORDERS_RAW
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Delta Lake is 100% compatible with Apache Spark&trade;, which makes it easy to get started with if you already use Spark for your big data workflows.
+# MAGIC Delta Lake features APIs for **SQL**, **Python**, and **Scala**, so that you can use it in whatever language you feel most comfortable in.
+# MAGIC
+# MAGIC
+# MAGIC    <img src="https://databricks.com/wp-content/uploads/2020/12/simplysaydelta.png" width=400/>
+
+# COMMAND ----------
+
+# First, Create Database SupplyChainDB if it doesn't exist
+db = "SupplyChainDB"
+
+spark.sql(f"CREATE DATABASE IF NOT EXISTS {db}")
+spark.sql(f"USE {db}")
+
+# COMMAND ----------
+
+## Create DelaTable ORDERS_RAW in the metastore using DataFrame's schema and write data to it
+## Documentation : https://docs.delta.io/latest/quick-start.html#create-a-table
+
+orders_raw_df.write.format("delta").mode("overwrite").saveAsTable("ORDERS_RAW")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### C. Show Created Delta Table:
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SHOW TABLES
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **d. Validate data loaded successfully to Delta Table ORDERS_RAW**:
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT count(*) FROM ORDERS_RAW
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC DESCRIBE TABLE ORDERS_RAW
 
 # COMMAND ----------
 
